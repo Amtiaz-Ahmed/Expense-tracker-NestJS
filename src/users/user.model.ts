@@ -6,24 +6,24 @@ export class User extends Model<User> {
         type: DataType.STRING,
         allowNull: false,
     })
-    name: string;
+    declare name: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
         unique: true
     })
-    email: string;
+    declare email: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false,
     })
-    password: string;
+    declare password: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: true,
     })
-    profileImage: string;
+    declare profileImage: string;
 }
