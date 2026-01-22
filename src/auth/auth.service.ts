@@ -21,6 +21,10 @@ export class AuthService {
             throw new BadRequestException('Invalid credentials');
         }
 
+        if (!user.password) {
+            throw new BadRequestException('User password not found in database');
+        }
+
         const match = await bcrypt.compare(data?.password, user?.password);
 
         if (!match) {

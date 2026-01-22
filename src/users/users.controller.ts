@@ -12,6 +12,7 @@ export class UsersController {
 
   @Post('register')
   register(@Body(new JoiValidationPipe(registerSchema)) body) {
+
     return this.usersService.register(body);
   }
 
