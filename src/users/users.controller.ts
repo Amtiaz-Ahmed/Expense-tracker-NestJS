@@ -4,6 +4,7 @@ import { UsersService } from './users.service';
 // import { UpdateUserDto } from './dto/update-user.dto';
 import { JoiValidationPipe } from 'src/common/pipes/joi-validation.pipe';
 import { registerSchema } from './validation/user.schema';
+import { Throttle } from '@nestjs/throttler';
 
 
 @Controller('users')
@@ -11,6 +12,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   register(@Body(new JoiValidationPipe(registerSchema)) body) {
 
     return this.usersService.register(body);
@@ -21,10 +23,10 @@ export class UsersController {
   //   return this.usersService.create(createUserDto);
   // }
 
-  // @Get()
-  // findAll() {
-  //   return this.usersService.findAll();
-  // }
+  @Get()
+  findUser() {
+    return this.usersService.findUser();
+  }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {
