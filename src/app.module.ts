@@ -4,9 +4,13 @@ import { SequelizeModule } from '@nestjs/sequelize';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { User } from './users/user.model';
+import { User } from './users/models/user.model';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { IncomeModule } from './income/income.module';
+import { ExpenseModule } from './expense/expense.module';
+import { CategoriesModule } from './categories/categories.module';
+import { RemindersModule } from './reminders/reminders.module';
 
 
 @Module({
@@ -37,6 +41,10 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
     UsersModule,
     AuthModule,
+    IncomeModule,
+    ExpenseModule,
+    CategoriesModule,
+    RemindersModule,
   ],
   providers: [
     {

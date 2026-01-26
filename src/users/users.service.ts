@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/sequelize';
-import { User } from './user.model';
+import { User } from './models/user.model';
 
 @Injectable()
 export class UsersService {
