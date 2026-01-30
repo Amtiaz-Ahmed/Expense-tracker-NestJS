@@ -1,0 +1,745 @@
+================================================================================
+EXPENSE TRACKER - COMPLETE IMPLEMENTATION CODE
+================================================================================
+
+This file contains all the code implementations for completing the Expense
+Tracker NestJS application. Use this as a reference for implementation.
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+1. Common Utilities - GetUser Decorator
+2. Expense Module - Complete Implementation
+3. Categories Module - Complete Implementation
+4. Income Module - Complete Implementation
+5. Reminders Module - Complete Implementation
+
+================================================================================
+1. COMMON UTILITIES
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: src/common/decorators/get-user.decorator.ts (NEW)
+--------------------------------------------------------------------------------
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const GetUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.user;
+  },
+);
+
+--------------------------------------------------------------------------------
+EXPLANATION: This custom decorator extracts the authenticated user from the
+JWT token. After JWT authentication, NestJS attaches the user object to the
+request. This decorator makes it easy to access in controllers.
+--------------------------------------------------------------------------------
+
+
+================================================================================
+2. EXPENSE MODULE - COMPLETE IMPLEMENTATION
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: src/expense/expense.service.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Expense } from './models/expense.model';
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
+
+@Injectable()
+export class ExpenseService {
+  constructor(
+    @InjectModel(Expense)
+    private expenseModel: typeof Expense,
+  ) { }
+
+  async create(createExpenseDto: CreateExpenseDto) {
+    return this.expenseModel.create({
+      userId: createExpenseDto.userId,
+      categoryId: createExpenseDto.categoryId,
+      amount: createExpenseDto.amount,
+      date: new Date(createExpenseDto.date),
+      description: createExpenseDto.description,
+    } as any);
+  }
+
+  async findAll(userId: number) {
+    return this.expenseModel.findAll({
+      where: { userId },
+      order: [['date', 'DESC']],
+    });
+  }
+
+  async findOne(id: number, userId: number) {
+    const expense = await this.expenseModel.findOne({
+      where: { id, userId },
+    });
+
+    if (!expense) {
+      throw new NotFoundException(`Expense with ID ${id} not found`);
+    }
+
+    return expense;
+  }
+
+  async update(id: number, updateExpenseDto: UpdateExpenseDto, userId: number) {
+    const expense = await this.findOne(id, userId);
+
+    const updateData: any = {
+      categoryId: updateExpenseDto.categoryId,
+      amount: updateExpenseDto.amount,
+      description: updateExpenseDto.description,
+    };
+
+    if (updateExpenseDto.date) {
+      updateData.date = new Date(updateExpenseDto.date);
+    }
+
+    await expense.update(updateData);
+    return expense;
+  }
+
+  async remove(id: number, userId: number) {
+    const expense = await this.findOne(id, userId);
+    await expense.destroy();
+    return { message: 'Expense deleted successfully' };
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/expense/expense.controller.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards 
+} from '@nestjs/common';
+import { ExpenseService } from './expense.service';
+import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guards';
+import { GetUser } from '../common/decorators/get-user.decorator';
+
+@Controller('expense')
+@UseGuards(JwtAuthGuard)
+export class ExpenseController {
+  constructor(private readonly expenseService: ExpenseService) { }
+
+  @Post()
+  create(@Body() createExpenseDto: CreateExpenseDto) {
+    return this.expenseService.create(createExpenseDto);
+  }
+
+  @Get()
+  findAll(@GetUser() user: any) {
+    return this.expenseService.findAll(user.userId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    return this.expenseService.findOne(+id, user.userId);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateExpenseDto: UpdateExpenseDto,
+    @GetUser() user: any
+  ) {
+    return this.expenseService.update(+id, updateExpenseDto, user.userId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser() user: any) {
+    return this.expenseService.remove(+id, user.userId);
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/expense/dto/update-expense.dto.ts (ALREADY CORRECT)
+--------------------------------------------------------------------------------
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateExpenseDto } from './create-expense.dto';
+
+export class UpdateExpenseDto extends PartialType(CreateExpenseDto) {}
+
+
+================================================================================
+3. CATEGORIES MODULE - COMPLETE IMPLEMENTATION
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: src/categories/categories.module.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { CategoriesService } from './categories.service';
+import { CategoriesController } from './categories.controller';
+import { ExpenseCategory } from './models/expense-category.model';
+
+@Module({
+  imports: [SequelizeModule.forFeature([ExpenseCategory])],
+  controllers: [CategoriesController],
+  providers: [CategoriesService],
+})
+export class CategoriesModule {}
+
+--------------------------------------------------------------------------------
+FILE: src/categories/categories.service.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ExpenseCategory } from './models/expense-category.model';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+
+@Injectable()
+export class CategoriesService {
+  constructor(
+    @InjectModel(ExpenseCategory)
+    private categoryModel: typeof ExpenseCategory,
+  ) {}
+
+  async create(createCategoryDto: CreateCategoryDto, userId: number) {
+    return this.categoryModel.create({
+      ...createCategoryDto,
+      userId,
+    } as any);
+  }
+
+  async findAll(userId: number) {
+    return this.categoryModel.findAll({
+      where: { userId },
+      order: [['name', 'ASC']],
+    });
+  }
+
+  async findOne(id: number, userId: number) {
+    const category = await this.categoryModel.findOne({
+      where: { id, userId },
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${id} not found`);
+    }
+
+    return category;
+  }
+
+  async update(id: number, updateCategoryDto: UpdateCategoryDto, userId: number) {
+    const category = await this.findOne(id, userId);
+    await category.update(updateCategoryDto);
+    return category;
+  }
+
+  async remove(id: number, userId: number) {
+    const category = await this.findOne(id, userId);
+    await category.destroy();
+    return { message: 'Category deleted successfully' };
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/categories/categories.controller.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete,
+  UseGuards 
+} from '@nestjs/common';
+import { CategoriesService } from './categories.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guards';
+import { GetUser } from '../common/decorators/get-user.decorator';
+
+@Controller('categories')
+@UseGuards(JwtAuthGuard)
+export class CategoriesController {
+  constructor(private readonly categoriesService: CategoriesService) {}
+
+  @Post()
+  create(@Body() createCategoryDto: CreateCategoryDto, @GetUser() user: any) {
+    return this.categoriesService.create(createCategoryDto, user.userId);
+  }
+
+  @Get()
+  findAll(@GetUser() user: any) {
+    return this.categoriesService.findAll(user.userId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    return this.categoriesService.findOne(+id, user.userId);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateCategoryDto: UpdateCategoryDto,
+    @GetUser() user: any
+  ) {
+    return this.categoriesService.update(+id, updateCategoryDto, user.userId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser() user: any) {
+    return this.categoriesService.remove(+id, user.userId);
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/categories/dto/create-category.dto.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+
+export class CreateCategoryDto {
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  icon?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+
+================================================================================
+4. INCOME MODULE - COMPLETE IMPLEMENTATION
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: src/income/income.module.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { IncomeService } from './income.service';
+import { IncomeController } from './income.controller';
+import { Income } from './models/income.model';
+
+@Module({
+  imports: [SequelizeModule.forFeature([Income])],
+  controllers: [IncomeController],
+  providers: [IncomeService],
+})
+export class IncomeModule {}
+
+--------------------------------------------------------------------------------
+FILE: src/income/income.service.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Income } from './models/income.model';
+import { CreateIncomeDto } from './dto/create-income.dto';
+import { UpdateIncomeDto } from './dto/update-income.dto';
+
+@Injectable()
+export class IncomeService {
+  constructor(
+    @InjectModel(Income)
+    private incomeModel: typeof Income,
+  ) {}
+
+  async create(createIncomeDto: CreateIncomeDto, userId: number) {
+    return this.incomeModel.create({
+      userId,
+      source: createIncomeDto.source,
+      amount: createIncomeDto.amount,
+      date: new Date(createIncomeDto.date),
+      description: createIncomeDto.description,
+    } as any);
+  }
+
+  async findAll(userId: number) {
+    return this.incomeModel.findAll({
+      where: { userId },
+      order: [['date', 'DESC']],
+    });
+  }
+
+  async findOne(id: number, userId: number) {
+    const income = await this.incomeModel.findOne({
+      where: { id, userId },
+    });
+
+    if (!income) {
+      throw new NotFoundException(`Income with ID ${id} not found`);
+    }
+
+    return income;
+  }
+
+  async update(id: number, updateIncomeDto: UpdateIncomeDto, userId: number) {
+    const income = await this.findOne(id, userId);
+
+    const updateData: any = {
+      source: updateIncomeDto.source,
+      amount: updateIncomeDto.amount,
+      description: updateIncomeDto.description,
+    };
+
+    if (updateIncomeDto.date) {
+      updateData.date = new Date(updateIncomeDto.date);
+    }
+
+    await income.update(updateData);
+    return income;
+  }
+
+  async remove(id: number, userId: number) {
+    const income = await this.findOne(id, userId);
+    await income.destroy();
+    return { message: 'Income deleted successfully' };
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/income/income.controller.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete,
+  UseGuards 
+} from '@nestjs/common';
+import { IncomeService } from './income.service';
+import { CreateIncomeDto } from './dto/create-income.dto';
+import { UpdateIncomeDto } from './dto/update-income.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guards';
+import { GetUser } from '../common/decorators/get-user.decorator';
+
+@Controller('income')
+@UseGuards(JwtAuthGuard)
+export class IncomeController {
+  constructor(private readonly incomeService: IncomeService) {}
+
+  @Post()
+  create(@Body() createIncomeDto: CreateIncomeDto, @GetUser() user: any) {
+    return this.incomeService.create(createIncomeDto, user.userId);
+  }
+
+  @Get()
+  findAll(@GetUser() user: any) {
+    return this.incomeService.findAll(user.userId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    return this.incomeService.findOne(+id, user.userId);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateIncomeDto: UpdateIncomeDto,
+    @GetUser() user: any
+  ) {
+    return this.incomeService.update(+id, updateIncomeDto, user.userId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser() user: any) {
+    return this.incomeService.remove(+id, user.userId);
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/income/dto/create-income.dto.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  IsString, 
+  IsNotEmpty, 
+  IsNumber, 
+  IsDateString,
+  IsOptional,
+  Min 
+} from 'class-validator';
+
+export class CreateIncomeDto {
+  @IsString()
+  @IsNotEmpty()
+  source: string;
+
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsDateString()
+  @IsNotEmpty()
+  date: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+
+
+================================================================================
+5. REMINDERS MODULE - COMPLETE IMPLEMENTATION
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: src/reminders/reminders.module.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Module } from '@nestjs/common';
+import { SequelizeModule } from '@nestjs/sequelize';
+import { RemindersService } from './reminders.service';
+import { RemindersController } from './reminders.controller';
+import { Reminder } from './models/reminder.model';
+
+@Module({
+  imports: [SequelizeModule.forFeature([Reminder])],
+  controllers: [RemindersController],
+  providers: [RemindersService],
+})
+export class RemindersModule {}
+
+--------------------------------------------------------------------------------
+FILE: src/reminders/reminders.service.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Reminder } from './models/reminder.model';
+import { CreateReminderDto } from './dto/create-reminder.dto';
+import { UpdateReminderDto } from './dto/update-reminder.dto';
+
+@Injectable()
+export class RemindersService {
+  constructor(
+    @InjectModel(Reminder)
+    private reminderModel: typeof Reminder,
+  ) {}
+
+  async create(createReminderDto: CreateReminderDto, userId: number) {
+    return this.reminderModel.create({
+      userId,
+      categoryId: createReminderDto.categoryId,
+      title: createReminderDto.title,
+      amount: createReminderDto.amount,
+      reminderDate: createReminderDto.reminderDate ? new Date(createReminderDto.reminderDate) : null,
+      reminderTime: createReminderDto.reminderTime,
+      isCompleted: false,
+    } as any);
+  }
+
+  async findAll(userId: number) {
+    return this.reminderModel.findAll({
+      where: { userId },
+      order: [['reminderDate', 'ASC']],
+    });
+  }
+
+  async findOne(id: number, userId: number) {
+    const reminder = await this.reminderModel.findOne({
+      where: { id, userId },
+    });
+
+    if (!reminder) {
+      throw new NotFoundException(`Reminder with ID ${id} not found`);
+    }
+
+    return reminder;
+  }
+
+  async update(id: number, updateReminderDto: UpdateReminderDto, userId: number) {
+    const reminder = await this.findOne(id, userId);
+
+    const updateData: any = {
+      categoryId: updateReminderDto.categoryId,
+      title: updateReminderDto.title,
+      amount: updateReminderDto.amount,
+      reminderTime: updateReminderDto.reminderTime,
+      isCompleted: updateReminderDto.isCompleted,
+    };
+
+    if (updateReminderDto.reminderDate) {
+      updateData.reminderDate = new Date(updateReminderDto.reminderDate);
+    }
+
+    await reminder.update(updateData);
+    return reminder;
+  }
+
+  async remove(id: number, userId: number) {
+    const reminder = await this.findOne(id, userId);
+    await reminder.destroy();
+    return { message: 'Reminder deleted successfully' };
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/reminders/reminders.controller.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete,
+  UseGuards 
+} from '@nestjs/common';
+import { RemindersService } from './reminders.service';
+import { CreateReminderDto } from './dto/create-reminder.dto';
+import { UpdateReminderDto } from './dto/update-reminder.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.auth.guards';
+import { GetUser } from '../common/decorators/get-user.decorator';
+
+@Controller('reminders')
+@UseGuards(JwtAuthGuard)
+export class RemindersController {
+  constructor(private readonly remindersService: RemindersService) {}
+
+  @Post()
+  create(@Body() createReminderDto: CreateReminderDto, @GetUser() user: any) {
+    return this.remindersService.create(createReminderDto, user.userId);
+  }
+
+  @Get()
+  findAll(@GetUser() user: any) {
+    return this.remindersService.findAll(user.userId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    return this.remindersService.findOne(+id, user.userId);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateReminderDto: UpdateReminderDto,
+    @GetUser() user: any
+  ) {
+    return this.remindersService.update(+id, updateReminderDto, user.userId);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser() user: any) {
+    return this.remindersService.remove(+id, user.userId);
+  }
+}
+
+--------------------------------------------------------------------------------
+FILE: src/reminders/dto/create-reminder.dto.ts (MODIFY)
+--------------------------------------------------------------------------------
+import { 
+  IsString, 
+  IsNotEmpty, 
+  IsNumber, 
+  IsDateString,
+  IsOptional,
+  Min 
+} from 'class-validator';
+
+export class CreateReminderDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsNumber()
+  @Min(0.01)
+  amount: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  categoryId: number;
+
+  @IsDateString()
+  @IsOptional()
+  reminderDate?: string;
+
+  @IsString()
+  @IsOptional()
+  reminderTime?: string;
+}
+
+--------------------------------------------------------------------------------
+FILE: src/reminders/dto/update-reminder.dto.ts (CHECK IF EXISTS)
+--------------------------------------------------------------------------------
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateReminderDto } from './create-reminder.dto';
+import { IsBoolean, IsOptional } from 'class-validator';
+
+export class UpdateReminderDto extends PartialType(CreateReminderDto) {
+  @IsBoolean()
+  @IsOptional()
+  isCompleted?: boolean;
+}
+
+
+================================================================================
+IMPLEMENTATION SUMMARY
+================================================================================
+
+TOTAL FILES TO CREATE/MODIFY: 17
+
+NEW FILES (1):
+  - src/common/decorators/get-user.decorator.ts
+
+MODIFIED FILES (16):
+  Expense Module (2):
+    - src/expense/expense.service.ts
+    - src/expense/expense.controller.ts
+  
+  Categories Module (4):
+    - src/categories/categories.module.ts
+    - src/categories/categories.service.ts
+    - src/categories/categories.controller.ts
+    - src/categories/dto/create-category.dto.ts
+  
+  Income Module (4):
+    - src/income/income.module.ts
+    - src/income/income.service.ts
+    - src/income/income.controller.ts
+    - src/income/dto/create-income.dto.ts
+  
+  Reminders Module (5):
+    - src/reminders/reminders.module.ts
+    - src/reminders/reminders.service.ts
+    - src/reminders/reminders.controller.ts
+    - src/reminders/dto/create-reminder.dto.ts
+    - src/reminders/dto/update-reminder.dto.ts
+
+KEY FEATURES IMPLEMENTED:
+✅ Full CRUD operations for all modules
+✅ JWT authentication guards on all endpoints
+✅ User-specific data filtering (users only see their own data)
+✅ Proper error handling with NotFoundException
+✅ Date conversion for all date fields
+✅ Validation decorators on all DTOs
+✅ Sequelize model injection configured
+
+NEXT STEPS AFTER IMPLEMENTATION:
+1. Test each endpoint with Postman/Thunder Client
+2. Verify JWT authentication is working
+3. Test user isolation (users can't access other users' data)
+4. Verify all validation rules are working
+5. Check error responses for proper status codes
+
+================================================================================
+END OF IMPLEMENTATION CODE
+================================================================================

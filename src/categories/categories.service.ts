@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotAcceptableException, ConflictException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { ExpenseCategory } from './models/expense-category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 

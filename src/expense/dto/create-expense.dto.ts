@@ -3,39 +3,29 @@ import {
     IsNumber,
     IsString,
     IsOptional,
-    IsDecimal,
     IsDateString,
-    IsEnum,
     Min,
 } from 'class-validator';
 
-export enum ExpenseType {
-    CASH = 'cash',
-    CARD = 'card',
-    BANK = 'bank',
-}
-
 export class CreateExpenseDto {
-    @IsString()
-    @IsNotEmpty()
-    title: string;
 
     @IsNumber()
-    @Min(1)
+    @IsNotEmpty()
+    userId: number;
+
+    @IsNumber()
+    @Min(0.01)
     amount: number;
 
-    @IsEnum(ExpenseType)
-    type: ExpenseType;
-
-    @IsOptional()
     @IsDateString()
-    expenseDate?: string;
+    @IsNotEmpty()
+    date: string;
 
     @IsString()
     @IsOptional()
     description?: string;
 
-    @IsString()
+    @IsNumber()
     @IsNotEmpty()
-    categoryId: string;
+    categoryId: number;
 }

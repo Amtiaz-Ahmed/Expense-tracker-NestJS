@@ -1,15 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Expense } from './models/expense.model';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Injectable()
 export class ExpenseService {
-  create(createExpenseDto: CreateExpenseDto) {
-    return 'This action adds a new expense';
+  constructor(
+    @InjectModel(Expense)
+    private expenseModel: typeof Expense,
+  ) { }
+  async create(createExpenseDto: CreateExpenseDto) {
+    return this.expenseModel.create({
+      userId: createExpenseDto.userId,
+      categoryId: createExpenseDto.categoryId,
+      amount: createExpenseDto.amount,
+      date: new Date(createExpenseDto.date),
+      description: createExpenseDto.description,
+    } as any);
   }
 
   findAll() {
-    return `This action returns all expense`;
+    return this.expenseModel.findAll();
   }
 
   findOne(id: number) {
