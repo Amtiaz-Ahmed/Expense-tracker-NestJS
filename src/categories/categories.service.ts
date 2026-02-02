@@ -6,23 +6,47 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
+
+  constructor(
+    @InjectModel(ExpenseCategory)
+    private readonly categoryModel: typeof ExpenseCategory,
+  ) { }
+
+  async create(createCategoryDto: CreateCategoryDto, userId: number) {
+    return this.categoryModel.create({
+      ...createCategoryDto,
+      userId,
+    } as any)
   }
 
-  findAll() {
-    return `This action returns all categories`;
+  async findAll(userId: number) {
+    return this.categoryModel.findAll({
+      where: { userId },
+      order: [['name', 'ASC']],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
+  async findOne(id: number, userId: number) {
+    const category = await this.categoryModel.findOne({
+      where: { id },
+    });
+
+    if (!category) {
+      throw new NotAcceptableException(`Category with ID ${id} not found`);
+    }
+
+    return category;
   }
 
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
+  async update(id: number, updateCategoryDto: UpdateCategoryDto, userId: number) {
+    const category = await this.findOne(id, userId);
+    await category.update(updateCategoryDto);
+    return category;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} category`;
+  async remove(id: number, userId: number) {
+    const category = await this.findOne(id, userId);
+    await category.destroy();
+    return "Category Deleted successfully";
   }
 }

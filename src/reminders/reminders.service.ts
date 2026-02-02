@@ -1,26 +1,71 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Reminder } from './models/reminder.model';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
+import { timeStamp } from 'console';
 
 @Injectable()
 export class RemindersService {
-  create(createReminderDto: CreateReminderDto) {
-    return 'This action adds a new reminder';
+
+  constructor(@InjectModel(Reminder) private reminderModel: typeof Reminder) { }
+
+  async create(createReminderDto: CreateReminderDto, userId: number) {
+    return this.reminderModel.create({
+      userId: userId,
+      categoryId: createReminderDto.categoryId,
+      title: createReminderDto.title,
+      amount: createReminderDto.amount,
+      reminderDate: createReminderDto.reminderDate ? new Date(createReminderDto.reminderDate) : null,
+      reminderTime: createReminderDto.reminderTime,
+      isCompleted: false,
+    } as any);
   }
 
-  findAll() {
-    return `This action returns all reminders`;
+  async findAll(userId: number) {
+    return this.reminderModel.findAll({
+      where: {
+        userId: userId,
+      },
+      order: [['createdAt', 'DESC']],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} reminder`;
+  async findOne(id: number, userId: number) {
+    const reminder = await this.reminderModel.findOne({
+      where: {
+        id, userId
+      },
+    });
+    if (!reminder) {
+      throw new NotFoundException(`Reminder with ID ${id} not found`);
+    }
+    return reminder;
   }
 
-  update(id: number, updateReminderDto: UpdateReminderDto) {
-    return `This action updates a #${id} reminder`;
+  async update(id: number, updateReminderDto: UpdateReminderDto, userId: number) {
+    const reminder = await this.findOne(id, userId);
+
+    const updateData: any = {
+      categoryId: updateReminderDto.categoryId,
+      title: updateReminderDto.title,
+      amount: updateReminderDto.amount,
+      reminderTime: updateReminderDto.reminderTime,
+      isCompleted: updateReminderDto.isCompleted,
+    };
+
+    if (updateReminderDto.reminderDate) {
+      updateData.reminderDate = new Date(updateReminderDto.reminderDate);
+    }
+
+    await reminder.update(updateData);
+
+    return reminder;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} reminder`;
+  async remove(id: number, userId: number) {
+    const reminder = await this.findOne(id, userId);
+    await reminder.destroy();
+    return { message: 'Reminder deleted successfully' };
   }
 }

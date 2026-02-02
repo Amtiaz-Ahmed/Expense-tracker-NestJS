@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Expense } from './models/expense.model';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { where } from 'sequelize';
 
 @Injectable()
 export class ExpenseService {
@@ -20,19 +21,43 @@ export class ExpenseService {
     } as any);
   }
 
-  findAll() {
-    return this.expenseModel.findAll();
+  findAll(userId: number) {
+    return this.expenseModel.findAll({
+      where: { userId },
+      order: [['date', 'DESC']],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} expense`;
+  async findOne(id: number, userId: number) {
+    const expense = await this.expenseModel.findOne({
+      where: { id, userId }
+    })
+    if (!expense) {
+      throw new NotFoundException(`Expense with ID ${id} not found`);
+    }
+    return expense;
   }
 
-  update(id: number, updateExpenseDto: UpdateExpenseDto) {
-    return `This action updates a #${id} expense`;
+
+  async update(id: number, updateExpenseDto: UpdateExpenseDto, userId: number) {
+    const expense = await this.findOne(id, userId);
+
+    const updateData: any = {
+      categoryId: updateExpenseDto.categoryId,
+      amount: updateExpenseDto.amount,
+      description: updateExpenseDto.description,
+    }
+
+    if (updateExpenseDto.date) {
+      updateData.date = new Date(updateExpenseDto.date);
+    }
+    await expense.update(updateData);
+    return expense;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} expense`;
+  async remove(id: number, userId: number) {
+    const expense = await this.findOne(id, userId);
+    await expense.destroy();
+    return { message: 'Expense deleted successfully' };
   }
 }

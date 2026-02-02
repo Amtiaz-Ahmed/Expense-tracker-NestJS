@@ -1,39 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guards';
+import { GetUser } from 'src/common/decorators/get-user.decorator';
 
 @Controller('categories')
+@UseGuards(JwtAuthGuard)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) { }
 
   @Post()
-  create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  create(@Body() createCategoryDto: CreateCategoryDto, @GetUser() user: any) {
+    return this.categoriesService.create(createCategoryDto, user.userId);
   }
 
-  @Put()
-  update(@Body() updateCategoryDto: UpdateCategoryDto) {
-    // return this.categoriesService.update(updateCategoryDto);
+  @Get()
+  findAll(@GetUser() user: any) {
+    return this.categoriesService.findAll(user.userId);
   }
 
-  // @Get()
-  // findAll() {
-  //   return this.categoriesService.findAll();
-  // }
+  @Get(':id')
+  findOne(@Param('id') id: string, @GetUser() user: any) {
+    return this.categoriesService.findOne(+id, user.userId);
+  }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.categoriesService.findOne(+id);
-  // }
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto, @GetUser() user: any) {
+    return this.categoriesService.update(+id, updateCategoryDto, user.userId);
+  }
 
-  // @Patch(':id')
-  // update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-  //   return this.categoriesService.update(+id, updateCategoryDto);
-  // }
-
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.categoriesService.remove(+id);
-  // }
+  @Delete(':id')
+  remove(@Param('id') id: string, @GetUser() user: any) {
+    return this.categoriesService.remove(+id, user.userId);
+  }
 }

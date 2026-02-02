@@ -15,14 +15,11 @@ export class CreateCategoryDto {
     @IsNotEmpty()
     name: string;
 
-    @IsEnum(CategoryType)
-    type: CategoryType;
-
     @IsOptional()
     @IsString()
     icon?: string;
 
     @IsOptional()
     @IsString()
-    color?: string;
+    description?: string;
 }

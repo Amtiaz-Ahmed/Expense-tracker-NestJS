@@ -7,6 +7,7 @@ import {
     Min,
     IsDateString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum IncomeSource {
     SALARY = 'salary',
@@ -16,26 +17,24 @@ export enum IncomeSource {
 }
 
 export class CreateIncomeDto {
-    @IsString()
-    @IsNotEmpty()
-    title: string;
-
-    @IsNumber()
-    @Min(1)
+    @IsNumber({}, { message: 'Amount must be a number' })
+    @Min(1, { message: 'Amount must be at least 1' })
+    @Type(() => Number)
     amount: number;
 
-    @IsEnum(IncomeSource)
+    @IsEnum(IncomeSource, { message: 'Source must be valid (salary, business, freelance, other)' })
     source: IncomeSource;
 
-    @IsString()
-    @IsNotEmpty()
-    categoryId: string;
+    @IsNumber({}, { message: 'Category ID must be a number' })
+    @IsNotEmpty({ message: 'Category ID is required' })
+    @Type(() => Number)
+    categoryId: number;
 
     @IsOptional()
-    @IsString()
-    desccription?: string;
+    @IsString({ message: 'Description must be a string' })
+    description?: string;
 
     @IsOptional()
     @IsDateString()
-    incomeDate?: string;
+    incomeDate: string;
 }
