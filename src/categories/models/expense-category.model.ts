@@ -7,19 +7,19 @@ export class ExpenseCategory extends Model<ExpenseCategory> {
 
     @ForeignKey(() => User)
     @Column(DataType.INTEGER)
-    userId: number;
+    declare userId: number;
 
     @Column({ type: DataType.STRING, allowNull: false })
-    name: string;
+    declare name: string;
 
     @Column({ type: DataType.STRING })
-    icon: string;
+    declare icon: string;
 
     @HasMany(() => Expense)
     expenses: Expense[];
 
     @Column({ type: DataType.STRING })
-    description: string;
+    declare description: string;
 
     @BelongsTo(() => User)
     user: User;

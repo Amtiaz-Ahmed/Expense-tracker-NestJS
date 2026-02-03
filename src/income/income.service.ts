@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Income } from './models/income.model';
 import { CreateIncomeDto } from './dto/create-income.dto';
@@ -11,14 +11,18 @@ export class IncomeService {
 
   async create(createIncomeDto: CreateIncomeDto, userId: number) {
 
-    const income = await this.incomeModel.create({
-      userId: userId,
-      amount: createIncomeDto.amount,
-      date: createIncomeDto.incomeDate ? new Date(createIncomeDto.incomeDate) : new Date(),
-      description: createIncomeDto.description,
-    } as any);
-
-    return income;
+    try {
+      const income = await this.incomeModel.create({
+        userId: userId,
+        amount: createIncomeDto.amount,
+        date: createIncomeDto.incomeDate ? new Date(createIncomeDto.incomeDate) : new Date(),
+        description: createIncomeDto.description,
+        source: createIncomeDto.source,
+      } as any);
+      return income;
+    } catch (error) {
+      throw new InternalServerErrorException(`Failed to create income: ${error.message}`);
+    }
   }
 
   async findAll(userId: number) {

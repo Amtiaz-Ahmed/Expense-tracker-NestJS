@@ -17,6 +17,7 @@ import { IncomeModule } from './income/income.module';
 import { ExpenseModule } from './expense/expense.module';
 import { CategoriesModule } from './categories/categories.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { ReportsModule } from './reports/reports.module';
 
 
 @Module({
@@ -33,6 +34,7 @@ import { RemindersModule } from './reminders/reminders.module';
       models: [User, Income, Expense, ExpenseReceipt, ExpenseCategory, Reminder],
       autoLoadModels: true,
       synchronize: true, // ❗ dev only
+      sync: { alter: true },
       logging: true,
     }),
     ThrottlerModule.forRoot({
@@ -51,6 +53,7 @@ import { RemindersModule } from './reminders/reminders.module';
     ExpenseModule,
     CategoriesModule,
     RemindersModule,
+    ReportsModule,
   ],
   providers: [
     {

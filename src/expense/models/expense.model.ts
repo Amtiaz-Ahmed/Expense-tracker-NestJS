@@ -7,20 +7,20 @@ import { ExpenseReceipt } from './expense-receipt.model';
 export class Expense extends Model<Expense> {
     @ForeignKey(() => User)
     @Column({ type: DataType.INTEGER })
-    userId: number;
+    declare userId: number;
 
     @ForeignKey(() => ExpenseCategory)
     @Column({ type: DataType.INTEGER })
-    categoryId: number;
+    declare categoryId: number;
 
     @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
-    amount: number;
+    declare amount: number;
 
     @Column({ type: DataType.DATEONLY, allowNull: false })
-    date: Date;
+    declare date: Date;
 
     @Column({ type: DataType.STRING })
-    description: string;
+    declare description: string;
 
     @BelongsTo(() => User)
     user: User;

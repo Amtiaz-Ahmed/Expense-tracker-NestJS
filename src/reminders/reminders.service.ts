@@ -4,13 +4,29 @@ import { Reminder } from './models/reminder.model';
 import { CreateReminderDto } from './dto/create-reminder.dto';
 import { UpdateReminderDto } from './dto/update-reminder.dto';
 import { timeStamp } from 'console';
+import { ExpenseCategory } from 'src/categories/models/expense-category.model';
+
 
 @Injectable()
 export class RemindersService {
 
-  constructor(@InjectModel(Reminder) private reminderModel: typeof Reminder) { }
+  constructor(
+    @InjectModel(Reminder) private reminderModel: typeof Reminder,
+    @InjectModel(ExpenseCategory) private expenseCategoryModel: typeof ExpenseCategory,
+  ) { }
 
   async create(createReminderDto: CreateReminderDto, userId: number) {
+    const category = await this.expenseCategoryModel.findOne({
+      where: {
+        id: createReminderDto.categoryId,
+        userId: userId,
+      }
+    });
+
+    if (!category) {
+      throw new NotFoundException(`Category with ID ${createReminderDto.categoryId} not found`);
+    }
+
     return this.reminderModel.create({
       userId: userId,
       categoryId: createReminderDto.categoryId,

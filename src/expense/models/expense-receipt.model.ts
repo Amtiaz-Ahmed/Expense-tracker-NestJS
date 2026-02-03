@@ -5,10 +5,10 @@ import { Expense } from './expense.model';
 export class ExpenseReceipt extends Model<ExpenseReceipt> {
     @ForeignKey(() => Expense)
     @Column({ type: DataType.INTEGER })
-    expenseId: number;
+    declare expenseId: number;
 
     @Column({ type: DataType.STRING, allowNull: false })
-    imageUrl: string;
+    declare imageUrl: string;
 
     @BelongsTo(() => Expense)
     expense: Expense;

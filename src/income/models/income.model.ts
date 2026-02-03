@@ -5,19 +5,19 @@ import { User } from 'src/users/models/user.model';
 export class Income extends Model<Income> {
     @ForeignKey(() => User)
     @Column({ type: DataType.INTEGER })
-    userId: number;
+    declare userId: number;
 
     @Column({ type: DataType.STRING, allowNull: false })
-    source: string;
+    declare source: string;
 
     @Column({ type: DataType.DECIMAL(10, 2), allowNull: false })
-    amount: number;
+    declare amount: number;
 
     @Column({ type: DataType.DATEONLY, allowNull: false })
-    date: Date;
+    declare date: Date;
 
     @Column({ type: DataType.STRING })
-    description: string;
+    declare description: string;
 
     @BelongsTo(() => User)
     user: User;
