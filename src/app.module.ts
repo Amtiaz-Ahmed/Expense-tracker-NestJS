@@ -35,7 +35,7 @@ import { ReportsModule } from './reports/reports.module';
       autoLoadModels: true,
       synchronize: true, // ❗ dev only
       sync: { alter: true },
-      logging: true,
+      logging: false,
     }),
     ThrottlerModule.forRoot({
       throttlers: [
