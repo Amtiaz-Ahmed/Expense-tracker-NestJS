@@ -25,7 +25,7 @@ export class CategoriesController {
     return this.categoriesService.findOne(+id, user.userId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto, @GetUser() user: any) {
     return this.categoriesService.update(+id, updateCategoryDto, user.userId);
   }

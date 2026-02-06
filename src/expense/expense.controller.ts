@@ -22,17 +22,17 @@ export class ExpenseController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @GetUser() user: any) {
+  findOne(@Param('id') id: number, @GetUser() user: any) {
     return this.expenseService.findOne(+id, user.userId);
   }
 
-  @Put()
-  update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto, @GetUser() user: any) {
+  @Put(':id')
+  update(@Param('id') id: number, @Body() updateExpenseDto: UpdateExpenseDto, @GetUser() user: any) {
     return this.expenseService.update(+id, updateExpenseDto, user.userId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @GetUser() user: any) {
+  remove(@Param('id') id: number, @GetUser() user: any) {
     return this.expenseService.remove(+id, user.userId);
   }
 }

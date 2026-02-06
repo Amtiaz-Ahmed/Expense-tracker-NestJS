@@ -43,6 +43,10 @@ export class IncomeService {
   async update(id: number, updateIncomeDto: UpdateIncomeDto, userId: number) {
     const income = await this.findOne(id, userId);
 
+    if (!income) {
+      throw new NotFoundException(`Income   with id ${id} not found`)
+    }
+
     const updateData: any = {
       source: updateIncomeDto.source,
       amount: updateIncomeDto.amount,

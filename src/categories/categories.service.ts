@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ExpenseCategory } from './models/expense-category.model';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Expense } from 'src/expense/models/expense.model';
 
 @Injectable()
 export class CategoriesService {
@@ -46,6 +47,15 @@ export class CategoriesService {
 
   async remove(id: number, userId: number) {
     const category = await this.findOne(id, userId);
+
+    const income = await Expense.findOne({
+      where: { categoryId: id }
+    })
+
+    if (income) {
+      throw new ConflictException("Category is already used in an expense");
+    }
+
     await category.destroy();
     return "Category Deleted successfully";
   }
